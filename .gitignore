@@ -1,0 +1,48 @@
+# Flutter
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+
+# Android
+/android/app/src/main/assets/flutter_assets/
+/android/app/build/
+/android/build/
+/android/.gradle/
+/android/app/src/main/java/io/flutter/plugins/
+
+# iOS
+/ios/Flutter/App.framework
+/ios/Flutter/engine.xcconfig
+/ios/Flutter/pod_ios_build_settings.sh
+/ios/Flutter/Generated.xcconfig
+/ios/Flutter/flutter_export_environment.sh
+/ios/Pods/
+/ios/Runner/GeneratedPluginRegistrant.h
+/ios/Runner/GeneratedPluginRegistrant.m
+/ios/Runner.xcworkspace/
+/ios/Runner.xcodeproj/project.xcworkspace/
+/ios/Runner.xcodeproj/xcuserdata/
+
+# macOS
+/macos/Flutter/ephemeral
+
+# Web
+/web/build/
+
+# General
+*.iml
+*.lastbuildstate
+*.idea/
+*.log
+
+# Java / Maven
+/target/
+.mvn/
+mvnw
+mvnw.cmd
+
+# Docker
+docker-compose.override.yml

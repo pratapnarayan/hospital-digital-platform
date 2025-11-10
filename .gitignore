@@ -37,9 +37,10 @@ build/
 *.lastbuildstate
 *.idea/
 *.log
+*.class
 
 # Java / Maven
-/target/
+**/target/
 .mvn/
 mvnw
 mvnw.cmd

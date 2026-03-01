@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../services/api_service.dart';
+import '../../services/current_api_service.dart';
+import '../../models/hospital.dart';
 import 'admin_panel.dart';
 import '../../widgets/admin_sidebar.dart';
 
@@ -29,8 +30,6 @@ class _HospitalManagementScreenState extends State<HospitalManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final hospitals = apiService.getMockHospitals();
-
     return Scaffold(
       backgroundColor: Colors.grey[50],
       body: Row(
@@ -108,121 +107,135 @@ class _HospitalManagementScreenState extends State<HospitalManagementScreen> {
                   const SizedBox(height: 24),
 
                   // Hospitals Table
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      side: BorderSide(color: Colors.grey[300]!),
-                    ),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: DataTable(
-                        columnSpacing: 40,
-                        columns: const [
-                          DataColumn(label: Text('Hospital')),
-                          DataColumn(label: Text('Location')),
-                          DataColumn(label: Text('Type')),
-                          DataColumn(label: Text('Patients')),
-                          DataColumn(label: Text('Doctors')),
-                          DataColumn(label: Text('Status')),
-                          DataColumn(label: Text('Actions')),
-                        ],
-                        rows: hospitals.map((hospital) {
-                          return DataRow(
-                            cells: [
-                              DataCell(
-                                Row(
-                                  children: [
-                                    Container(
-                                      width: 40,
-                                      height: 40,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF1976D2)
-                                            .withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: const Icon(
-                                        Icons.local_hospital,
-                                        color: Color(0xFF1976D2),
-                                        size: 20,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      hospital.name,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              DataCell(Text(hospital.location)),
-                              DataCell(
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue[100],
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    hospital.type,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.blue[900],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              DataCell(Text(hospital.patients.toString())),
-                              DataCell(Text(hospital.doctors.toString())),
-                              DataCell(
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: hospital.status == 'Active'
-                                        ? Colors.green
-                                        : Colors.grey,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    hospital.status,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              DataCell(
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.edit, size: 20),
-                                      onPressed: () {},
-                                      color: Colors.black54,
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete, size: 20),
-                                      onPressed: () {},
-                                      color: Colors.red,
-                                    ),
-                                  ],
-                                ),
-                              ),
+                  FutureBuilder<List<Hospital>>(
+                    future: currentApiService.getHospitals(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      } else if (snapshot.hasError) {
+                        return Center(child: Text('Error: ${snapshot.error}'));
+                      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return const Center(child: Text('No hospitals found.'));
+                      }
+
+                      final hospitals = snapshot.data!;
+                      return Card(
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: DataTable(
+                            columnSpacing: 40,
+                            columns: const [
+                              DataColumn(label: Text('Hospital')),
+                              DataColumn(label: Text('Location')),
+                              DataColumn(label: Text('Type')),
+                              DataColumn(label: Text('Patients')),
+                              DataColumn(label: Text('Doctors')),
+                              DataColumn(label: Text('Status')),
+                              DataColumn(label: Text('Actions')),
                             ],
-                          );
-                        }).toList(),
-                      ),
-                    ),
+                            rows: hospitals.map((hospital) {
+                              return DataRow(
+                                cells: [
+                                  DataCell(
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 40,
+                                          height: 40,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF1976D2)
+                                                .withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: const Icon(
+                                            Icons.local_hospital,
+                                            color: Color(0xFF1976D2),
+                                            size: 20,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Text(
+                                          hospital.name,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  DataCell(Text(hospital.location)),
+                                  DataCell(
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue[100],
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        hospital.type,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.blue[900],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  DataCell(Text(hospital.patients.toString())),
+                                  DataCell(Text(hospital.doctors.toString())),
+                                  DataCell(
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: hospital.status == 'Active'
+                                            ? Colors.green
+                                            : Colors.grey,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        hospital.status,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  DataCell(
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.edit, size: 20),
+                                          onPressed: () {},
+                                          color: Colors.black54,
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.delete, size: 20),
+                                          onPressed: () {},
+                                          color: Colors.red,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),

@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:hospital_digital_platform/services/api_service.dart';
+import 'package:hospital_digital_platform/services/auth_service.dart';
 import 'screens/patient/patient_app.dart';
 import 'screens/doctor/doctor_portal.dart';
 import 'screens/admin/admin_panel.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await authService.restoreSession();
+  setupInterceptors();
   runApp(const HospitalDigitalRecordsApp());
 }
 
@@ -15,7 +20,7 @@ class HospitalDigitalRecordsApp extends StatelessWidget {
     return MaterialApp(
       title: 'Hospital Digital Records',
       theme: ThemeData(
-        primaryColor: const Color(0xFF1976D2),
+        primaryColor: const Color.fromARGB(255, 31, 124, 216),
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF1976D2),
           primary: const Color(0xFF1976D2),

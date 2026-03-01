@@ -48,3 +48,8 @@ mvnw.cmd
 
 # Docker
 docker-compose.override.yml
+
+# Eclipse
+.project
+.classpath
+.settings/

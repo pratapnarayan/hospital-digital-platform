@@ -1,9 +1,0 @@
-spring:
-  application:
-    name: auth-service
-  data:
-    mongodb:
-      uri: mongodb://localhost:27017/hospitalDB
-
-server:
-  port: 8081

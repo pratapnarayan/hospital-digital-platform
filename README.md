@@ -85,18 +85,20 @@ To run the full application, you will need to start the backend microservices an
 
 ### 1. Run the Backend Microservices
 
-Navigate to the `backend` directory and run the following Maven command. This will build all modules and start each microservice on its configured port.
+MongoDB must be running locally on `localhost:27017`.
+
+The simplest way to start all backend services (each in its own background process) is:
 
 ```sh
-cd backend
-mvn spring-boot:run
+bash scripts/run-local.sh
 ```
 
-This command will start:
+This starts:
 - **Gateway Service** on port `8080`
 - **Auth Service** on port `8081`
 - **Patient Service** on port `8082`
 - **Record Service** on port `8083`
+- **Notification Service** on port `8084`
 
 ### 2. Run the Frontend Application
 
@@ -115,3 +117,34 @@ flutter run -d chrome
 ```
 
 The application will launch with a demo switcher that allows you to toggle between the Patient, Doctor, and Admin views.
+
+## Quick run (local)
+
+Prerequisites
+- Java 11+ (check with `java -version`)
+- Maven
+- Flutter SDK (for frontend)
+- **MongoDB running locally on `localhost:27017`**
+
+### Start backend microservices (convenience script)
+
+1. Start MongoDB locally (must already be running before the script).
+2. Run:
+
+```sh
+bash scripts/run-local.sh
+```
+
+This starts the backend services in order with a short delay between each startup:
+- Gateway Service (8080)
+- Auth Service (8081)
+- Patient Service (8082)
+- Record Service (8083)
+- Notification Service (8084)
+
+You can verify:
+- `http://localhost:8080/health`
+- `http://localhost:8080/record/health`
+
+Java/Eclipse note
+- Project .settings indicate Java 20 compiler compliance in some IDE metadata; for portability prefer Java 11+ for local runs unless you intentionally target Java 21. Update IDE config or the README to match your target Java version.

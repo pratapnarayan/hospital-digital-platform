@@ -1,8 +1,17 @@
+server:
+  port: 8080
+
 spring:
   application:
     name: gateway-service
   cloud:
     gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
       routes:
         - id: auth-service
           uri: http://localhost:8081
@@ -19,6 +28,3 @@ spring:
   data:
     mongodb:
       uri: mongodb://localhost:27017/hospitalDB
-
-server:
-  port: 8080

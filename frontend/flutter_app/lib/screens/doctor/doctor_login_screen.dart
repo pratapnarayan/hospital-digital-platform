@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../services/auth_service.dart';
+import '../../services/current_auth_service.dart';
+import '../../services/environment.dart';
 
 class DoctorLoginScreen extends StatefulWidget {
   final VoidCallback onLogin;
@@ -22,12 +23,19 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
   }
 
   Future<void> _handleLogin() async {
-    await authService.login(
-      _emailController.text,
-      _passwordController.text,
-      'doctor',
-    );
-    widget.onLogin();
+    final email = _emailController.text;
+    final password = _passwordController.text;
+
+    bool success;
+    if (useMockData) {
+      success = await currentAuthService.login(email, password, 'doctor');
+    } else {
+      success = await currentAuthService.login(email, password);
+    }
+
+    if (success) {
+      widget.onLogin();
+    }
   }
 
   @override

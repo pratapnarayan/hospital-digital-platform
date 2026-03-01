@@ -1,60 +1,80 @@
-class AuthService {
-  String? _currentUserId;
-  String? _currentUserRole;
-  String? _currentUserName;
+/// auth_service.dart
+/// Handles real user authentication with JWT token management.
 
-  bool get isLoggedIn => _currentUserId != null;
-  String? get currentUserId => _currentUserId;
-  String? get currentUserRole => _currentUserRole;
-  String? get currentUserName => _currentUserName;
+import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'api_service.dart';
+import 'auth_service_interface.dart';
 
-  Future<bool> login(String email, String password, String role) async {
-    // Simulate API call
-    await Future.delayed(const Duration(milliseconds: 500));
+class AuthService implements AuthServiceInterface {
+  final Dio _dio = Dio(BaseOptions(baseUrl: 'http://localhost:8080'));
+  final _storage = const FlutterSecureStorage();
 
-    // Mock authentication - accept any credentials
-    _currentUserId = email.split('@').first;
-    _currentUserRole = role;
-    _currentUserName = _getUserNameByRole(role);
+  @override
+  Future<bool> login(String email, String password, [String? role]) async {
+    try {
+      final response = await _dio.post('/auth/login', data: {
+        'username': email,
+        'password': password,
+      });
 
-    return true;
+      if (response.statusCode == 200 && response.data['token'] != null) {
+        final token = response.data['token'];
+
+        // Save JWT in secure storage
+        await _storage.write(key: 'jwt_token', value: token);
+
+        // Set token globally for all Dio instances
+        apiService.setAuthToken(token);
+        return true;
+      }
+    } catch (e) {
+      print('Login failed: $e');
+    }
+    return false;
   }
 
-  Future<bool> register(
-    String name,
-    String email,
-    String password,
-    String? medicalId,
-  ) async {
-    // Simulate API call
-    await Future.delayed(const Duration(milliseconds: 500));
+  @override
+  Future<bool> register(String name, String email, String password, [String? medicalId]) async {
+    try {
+      final response = await _dio.post('/auth/register', data: {
+        'name': name,
+        'username': email,
+        'password': password,
+      });
 
-    _currentUserId = email.split('@').first;
-    _currentUserRole = 'patient';
-    _currentUserName = name;
-
-    return true;
-  }
-
-  void logout() {
-    _currentUserId = null;
-    _currentUserRole = null;
-    _currentUserName = null;
-  }
-
-  String _getUserNameByRole(String role) {
-    switch (role) {
-      case 'patient':
-        return 'Sarah Johnson';
-      case 'doctor':
-        return 'Dr. Michael Chen';
-      case 'admin':
-        return 'System Admin';
-      default:
-        return 'User';
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Registration failed: $e');
+      return false;
     }
   }
+
+  @override
+  Future<void> logout() async {
+    await _storage.delete(key: 'jwt_token');
+    apiService.clearAuthToken();
+  }
+
+  /// Utility to restore JWT token after app restart
+  Future<void> restoreSession() async {
+    final token = await _storage.read(key: 'jwt_token');
+    if (token != null) {
+      apiService.setAuthToken(token);
+    }
+  }
+
+  @override
+  bool get isLoggedIn => throw UnimplementedError();
+
+  @override
+  String? get currentUserId => throw UnimplementedError();
+
+  @override
+  String? get currentUserRole => throw UnimplementedError();
+
+  @override
+  String? get currentUserName => throw UnimplementedError();
 }
 
-// Singleton instance
-final authService = AuthService();
+final AuthService authService = AuthService();

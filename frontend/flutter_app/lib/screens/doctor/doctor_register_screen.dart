@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
-import '../../services/current_auth_service.dart';
-import '../../services/environment.dart';
+import '../../services/doctor_auth_service.dart';
 
-class DoctorLoginScreen extends StatefulWidget {
-  final VoidCallback onLogin;
-  final VoidCallback onRegister; // navigate to registration screen
+class DoctorRegisterScreen extends StatefulWidget {
+  final VoidCallback onRegistered; // navigate back to login after success
+  final VoidCallback onBackToLogin;
 
-  const DoctorLoginScreen({
+  const DoctorRegisterScreen({
     super.key,
-    required this.onLogin,
-    required this.onRegister,
+    required this.onRegistered,
+    required this.onBackToLogin,
   });
 
   @override
-  State<DoctorLoginScreen> createState() => _DoctorLoginScreenState();
+  State<DoctorRegisterScreen> createState() => _DoctorRegisterScreenState();
 }
 
-class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
+class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _hospitalIdController = TextEditingController();
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -28,15 +28,18 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _hospitalIdController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleLogin() async {
+  Future<void> _handleRegister() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
+    final hospitalId = _hospitalIdController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
-      setState(() => _errorMessage = 'Email and password are required.');
+    // Basic front-end validation
+    if (email.isEmpty || password.isEmpty || hospitalId.isEmpty) {
+      setState(() => _errorMessage = 'All fields are required.');
       return;
     }
 
@@ -45,21 +48,27 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
       _errorMessage = null;
     });
 
-    bool success;
-    if (useMockData) {
-      success = await currentAuthService.login(email, password, 'doctor');
-    } else {
-      success = await currentAuthService.login(email, password);
-    }
+    final error = await registerDoctor(
+      email: email,
+      password: password,
+      hospitalId: hospitalId,
+    );
 
     if (!mounted) return;
 
-    if (success) {
-      widget.onLogin();
+    if (error == null) {
+      // Success — show snackbar then navigate back to login
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account created! Please log in.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      widget.onRegistered();
     } else {
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Invalid email or password. Please try again.';
+        _errorMessage = error;
       });
     }
   }
@@ -94,7 +103,7 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
-                          Icons.medical_services,
+                          Icons.person_add,
                           color: Colors.white,
                           size: 32,
                         ),
@@ -102,20 +111,21 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                     ),
                     const SizedBox(height: 24),
 
+                    // Title
                     const Text(
-                      'Doctor Portal',
+                      'Register as Doctor',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 28,
+                        fontSize: 26,
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     const Text(
-                      'Access patient records and manage appointments',
+                      'Create your doctor account to access patient records',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 14, color: Colors.black54),
+                      style: TextStyle(fontSize: 13, color: Colors.black54),
                     ),
                     const SizedBox(height: 32),
 
@@ -140,7 +150,9 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                               child: Text(
                                 _errorMessage!,
                                 style: const TextStyle(
-                                    color: Colors.red, fontSize: 13),
+                                  color: Colors.red,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
                           ],
@@ -164,8 +176,7 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                       keyboardType: TextInputType.emailAddress,
                       decoration: InputDecoration(
                         hintText: 'doctor@hospital.com',
-                        prefixIcon:
-                            const Icon(Icons.email_outlined, size: 20),
+                        prefixIcon: const Icon(Icons.email_outlined, size: 20),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -189,8 +200,7 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                       obscureText: _obscurePassword,
                       decoration: InputDecoration(
                         hintText: '••••••••',
-                        prefixIcon:
-                            const Icon(Icons.lock_outline, size: 20),
+                        prefixIcon: const Icon(Icons.lock_outline, size: 20),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscurePassword
@@ -207,11 +217,35 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                         contentPadding: const EdgeInsets.all(12),
                       ),
                     ),
+                    const SizedBox(height: 16),
+
+                    // Hospital ID
+                    const Text(
+                      'Hospital ID',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _hospitalIdController,
+                      decoration: InputDecoration(
+                        hintText: 'e.g. HOSP-001',
+                        prefixIcon:
+                            const Icon(Icons.local_hospital_outlined, size: 20),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        contentPadding: const EdgeInsets.all(12),
+                      ),
+                    ),
                     const SizedBox(height: 28),
 
-                    // Login button
+                    // Register button
                     ElevatedButton(
-                      onPressed: _isLoading ? null : _handleLogin,
+                      onPressed: _isLoading ? null : _handleRegister,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1976D2),
                         foregroundColor: Colors.white,
@@ -232,42 +266,21 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                               ),
                             )
                           : const Text(
-                              'Sign In',
+                              'Create Account',
                               style: TextStyle(
                                   fontSize: 15, fontWeight: FontWeight.w600),
                             ),
                     ),
                     const SizedBox(height: 20),
 
-                    // Divider
-                    Row(
-                      children: [
-                        Expanded(child: Divider(color: Colors.grey[300])),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Text('or',
-                              style: TextStyle(color: Colors.grey[500])),
-                        ),
-                        Expanded(child: Divider(color: Colors.grey[300])),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Register link
-                    OutlinedButton(
-                      onPressed: widget.onRegister,
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        side: const BorderSide(color: Color(0xFF1976D2)),
-                      ),
+                    // Back to login
+                    TextButton(
+                      onPressed: widget.onBackToLogin,
                       child: const Text(
-                        'Register as Doctor',
+                        '← Back to Login',
                         style: TextStyle(
                           color: Color(0xFF1976D2),
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),

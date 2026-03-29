@@ -22,9 +22,18 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody User user) {
-        if(userRepository.findByUsername(user.getUsername()).isPresent()) {
+        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Username already exists");
         }
+
+        // Role-specific validation
+        if ("DOCTOR".equalsIgnoreCase(user.getRole())) {
+            if (user.getHospitalId() == null || user.getHospitalId().isBlank()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("hospitalId is required for DOCTOR registration");
+            }
+        }
+
         user.setPassword(new BCryptPasswordEncoder().encode(user.getPassword()));
         userRepository.save(user);
         return ResponseEntity.ok("User registered successfully");

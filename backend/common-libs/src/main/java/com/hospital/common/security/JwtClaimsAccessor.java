@@ -1,4 +1,4 @@
-package com.hospital.record.security;
+package com.hospital.common.security;
 
 import com.hospital.common.security.JwtClaimKeys;
 import io.jsonwebtoken.Claims;

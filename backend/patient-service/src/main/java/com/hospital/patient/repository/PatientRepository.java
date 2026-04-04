@@ -8,39 +8,18 @@ import java.util.Optional;
 
 @Repository
 public interface PatientRepository extends MongoRepository<Patient, String> {
+    /**
+     * Find patients by hospital ID
+     */
+    java.util.List<Patient> findByHospitalId(String hospitalId);
     
     /**
-     * Find a patient by email address
+     * Find patient by phone within a hospital
      */
-    Optional<Patient> findByEmail(String email);
+    Optional<Patient> findByPhoneAndHospitalId(String phone, String hospitalId);
     
     /**
-     * Find a patient by phone number
+     * Check if a patient exists with the given phone in a hospital
      */
-    Optional<Patient> findByPhone(String phone);
-    
-    /**
-     * Find patients by first name (case-insensitive)
-     */
-    java.util.List<Patient> findByFirstNameIgnoreCase(String firstName);
-    
-    /**
-     * Find patients by last name (case-insensitive)
-     */
-    java.util.List<Patient> findByLastNameIgnoreCase(String lastName);
-    
-    /**
-     * Find patients by first name and last name (case-insensitive)
-     */
-    java.util.List<Patient> findByFirstNameIgnoreCaseAndLastNameIgnoreCase(String firstName, String lastName);
-    
-    /**
-     * Check if a patient exists with the given email
-     */
-    boolean existsByEmail(String email);
-    
-    /**
-     * Check if a patient exists with the given phone
-     */
-    boolean existsByPhone(String phone);
+    boolean existsByPhoneAndHospitalId(String phone, String hospitalId);
 }

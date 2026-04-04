@@ -1,13 +1,17 @@
 package com.hospital.record;
 
+import com.hospital.common.security.JwtClaimsAccessor;
 import com.hospital.record.dto.CreateMedicalRecordRequest;
 import com.hospital.record.dto.UpdateMedicalRecordRequest;
 import com.hospital.record.model.MedicalRecord;
 import com.hospital.record.repository.MedicalRecordRepository;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -25,21 +29,24 @@ public class RecordController {
         return "Record Service running";
     }
 
-    /**
-     * Create a new medical record.
-     */
     @PostMapping
-    public ResponseEntity<MedicalRecord> createRecord(@RequestBody CreateMedicalRecordRequest request) {
-        if (request == null
-                || request.getPatientId() == null
-                || request.getDoctorId() == null
-                || request.getTitle() == null) {
-            return ResponseEntity.badRequest().build();
+    public ResponseEntity<?> createRecord(@RequestBody CreateMedicalRecordRequest request) {
+        String role = JwtClaimsAccessor.role().orElse("");
+        if (!"DOCTOR".equalsIgnoreCase(role)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only doctors can create records");
+        }
+        
+        String hospitalId = JwtClaimsAccessor.hospitalId().orElse("");
+        String doctorId = JwtClaimsAccessor.userId().orElse("");
+
+        if (request == null || request.getPatientId() == null || request.getTitle() == null) {
+            return ResponseEntity.badRequest().body("PatientId and Title are required");
         }
 
         MedicalRecord record = new MedicalRecord();
+        record.setHospitalId(hospitalId);
         record.setPatientId(request.getPatientId());
-        record.setDoctorId(request.getDoctorId());
+        record.setDoctorId(doctorId);
         record.setTitle(request.getTitle());
         record.setDescription(request.getDescription());
         record.setDiagnosis(request.getDiagnosis());
@@ -52,12 +59,16 @@ public class RecordController {
         return ResponseEntity.ok(saved);
     }
 
-    /**
-     * Update an existing medical record (partial update).
-     */
     @PutMapping("/{recordId}")
-    public ResponseEntity<MedicalRecord> updateRecord(@PathVariable String recordId,
-                                                      @RequestBody UpdateMedicalRecordRequest request) {
+    public ResponseEntity<?> updateRecord(@PathVariable String recordId,
+                                          @RequestBody UpdateMedicalRecordRequest request) {
+        String role = JwtClaimsAccessor.role().orElse("");
+        if (!"DOCTOR".equalsIgnoreCase(role)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only doctors can update records");
+        }
+        
+        String hospitalId = JwtClaimsAccessor.hospitalId().orElse("");
+
         if (request == null) {
             return ResponseEntity.badRequest().build();
         }
@@ -68,6 +79,9 @@ public class RecordController {
         }
 
         MedicalRecord existing = existingOpt.get();
+        if (!hospitalId.equals(existing.getHospitalId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         // Update provided fields only
         if (request.getTitle() != null) {
@@ -85,43 +99,72 @@ public class RecordController {
         return ResponseEntity.ok(saved);
     }
 
-    /**
-     * Return all medical records.
-     * Empty DB returns an empty list.
-     */
     @GetMapping("/list")
-    public List<MedicalRecord> getRecords() {
-        return medicalRecordRepository.findAll();
+    public ResponseEntity<?> getRecords(@RequestParam(defaultValue = "0") int page,
+                                        @RequestParam(defaultValue = "10") int size) {
+        String role = JwtClaimsAccessor.role().orElse("");
+        if (!"DOCTOR".equalsIgnoreCase(role)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only doctors can list all records");
+        }
+        String hospitalId = JwtClaimsAccessor.hospitalId().orElse("");
+        return ResponseEntity.ok(medicalRecordRepository.findByHospitalId(hospitalId, PageRequest.of(page, size)));
     }
 
-    /**
-     * Return a medical record by its ID.
-     */
     @GetMapping("/{recordId}")
-    public ResponseEntity<MedicalRecord> getRecordById(@PathVariable String recordId) {
-        return medicalRecordRepository.findById(recordId)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
-    }
-
-    /**
-     * Delete a medical record by its ID.
-     */
-    @DeleteMapping("/{recordId}")
-    public ResponseEntity<Void> deleteRecord(@PathVariable String recordId) {
-        if (!medicalRecordRepository.existsById(recordId)) {
+    public ResponseEntity<?> getRecordById(@PathVariable String recordId) {
+        var existingOpt = medicalRecordRepository.findById(recordId);
+        if (existingOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
+        MedicalRecord existing = existingOpt.get();
+        
+        String role = JwtClaimsAccessor.role().orElse("");
+        if ("DOCTOR".equalsIgnoreCase(role)) {
+            String hospitalId = JwtClaimsAccessor.hospitalId().orElse("");
+            if (!hospitalId.equals(existing.getHospitalId())) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } else if ("PATIENT".equalsIgnoreCase(role)) {
+            String patientId = JwtClaimsAccessor.patientId().orElse("");
+            if (!patientId.equals(existing.getPatientId())) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
+        return ResponseEntity.ok(existing);
+    }
+
+    @DeleteMapping("/{recordId}")
+    public ResponseEntity<?> deleteRecord(@PathVariable String recordId) {
+        String role = JwtClaimsAccessor.role().orElse("");
+        if (!"DOCTOR".equalsIgnoreCase(role)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        String hospitalId = JwtClaimsAccessor.hospitalId().orElse("");
+        
+        var existingOpt = medicalRecordRepository.findById(recordId);
+        if (existingOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        if (!hospitalId.equals(existingOpt.get().getHospitalId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         medicalRecordRepository.deleteById(recordId);
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Return all records for a given patient.
-     * Empty DB returns an empty list.
-     */
     @GetMapping("/patient/{patientId}")
-    public List<MedicalRecord> getRecordsByPatientId(@PathVariable String patientId) {
-        return medicalRecordRepository.findByPatientId(patientId);
+    public ResponseEntity<?> getRecordsByPatientId(@PathVariable String patientId) {
+        String role = JwtClaimsAccessor.role().orElse("");
+        
+        if ("DOCTOR".equalsIgnoreCase(role)) {
+            String hospitalId = JwtClaimsAccessor.hospitalId().orElse("");
+            return ResponseEntity.ok(medicalRecordRepository.findByPatientIdAndHospitalId(patientId, hospitalId));
+        } else if ("PATIENT".equalsIgnoreCase(role)) {
+            String tokenPatientId = JwtClaimsAccessor.patientId().orElse("");
+            String hospitalId = JwtClaimsAccessor.hospitalId().orElse("");
+            if (!tokenPatientId.equals(patientId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Collections.emptyList());
+            }
+            return ResponseEntity.ok(medicalRecordRepository.findByPatientIdAndHospitalId(patientId, hospitalId));
+        }
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 }

@@ -15,12 +15,15 @@ class AuthService implements AuthServiceInterface {
   String? _currentUserId;
   String? _currentUserRole;
   String? _currentHospitalId;
+  String? _currentPatientId;
 
   @override
   bool get isLoggedIn => _currentUserId != null;
 
   @override
   String? get currentUserId => _currentUserId;
+
+  String? get currentPatientId => _currentPatientId;
 
   @override
   String? get currentUserRole => _currentUserRole;
@@ -82,6 +85,7 @@ class AuthService implements AuthServiceInterface {
     _currentUserId = null;
     _currentUserRole = null;
     _currentHospitalId = null;
+    _currentPatientId = null;
   }
 
   /// Utility to restore JWT token after app restart and re-populate in-memory claims.
@@ -98,6 +102,7 @@ class AuthService implements AuthServiceInterface {
     _currentUserId = JwtDecoder.getUserId(token);
     _currentUserRole = JwtDecoder.getRole(token);
     _currentHospitalId = JwtDecoder.getHospitalId(token);
+    _currentPatientId = JwtDecoder.getPatientId(token);
   }
 }
 

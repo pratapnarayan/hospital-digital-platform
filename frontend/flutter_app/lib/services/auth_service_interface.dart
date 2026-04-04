@@ -4,6 +4,7 @@ abstract class AuthServiceInterface {
   Future<void> logout();
   bool get isLoggedIn;
   String? get currentUserId;
+  String? get currentPatientId;
   String? get currentUserRole;
   String? get currentUserName;
 }

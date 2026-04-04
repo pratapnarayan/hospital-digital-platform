@@ -180,7 +180,7 @@ class _PatientLoginScreenState extends State<PatientLoginScreen>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
-            'Email or Medical ID',
+            'Phone Number or Medical ID',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -191,7 +191,7 @@ class _PatientLoginScreenState extends State<PatientLoginScreen>
           TextField(
             controller: _emailController,
             decoration: InputDecoration(
-              hintText: 'john@example.com',
+              hintText: '9876543210',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -289,7 +289,7 @@ class _PatientLoginScreenState extends State<PatientLoginScreen>
           ),
           const SizedBox(height: 16),
           const Text(
-            'Email',
+            'Phone Number',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -299,9 +299,9 @@ class _PatientLoginScreenState extends State<PatientLoginScreen>
           const SizedBox(height: 8),
           TextField(
             controller: _emailController,
-            keyboardType: TextInputType.emailAddress,
+            keyboardType: TextInputType.phone,
             decoration: InputDecoration(
-              hintText: 'john@example.com',
+              hintText: '9876543210',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),

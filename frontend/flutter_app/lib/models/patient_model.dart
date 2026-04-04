@@ -1,40 +1,31 @@
 class Patient {
   final String id;
   final String name;
-  final String email;
-  final String medicalId;
+  final int age;
+  final String gender;
   final String? phone;
-  final String? dateOfBirth;
-  final String? bloodGroup;
-  final String? address;
-  final String status;
-  final String? lastVisit;
+  final String? createdAt;
+  final String? updatedAt;
 
   Patient({
     required this.id,
     required this.name,
-    required this.email,
-    required this.medicalId,
+    required this.age,
+    required this.gender,
     this.phone,
-    this.dateOfBirth,
-    this.bloodGroup,
-    this.address,
-    this.status = 'Active',
-    this.lastVisit,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory Patient.fromJson(Map<String, dynamic> json) {
     return Patient(
       id: json['id'] as String,
       name: json['name'] as String,
-      email: json['email'] as String,
-      medicalId: json['medicalId'] as String,
+      age: json['age'] as int,
+      gender: json['gender'] as String,
       phone: json['phone'] as String?,
-      dateOfBirth: json['dateOfBirth'] as String?,
-      bloodGroup: json['bloodGroup'] as String?,
-      address: json['address'] as String?,
-      status: json['status'] as String? ?? 'Active',
-      lastVisit: json['lastVisit'] as String?,
+      createdAt: json['createdAt'] as String?,
+      updatedAt: json['updatedAt'] as String?,
     );
   }
 
@@ -42,14 +33,9 @@ class Patient {
     return {
       'id': id,
       'name': name,
-      'email': email,
-      'medicalId': medicalId,
-      'phone': phone,
-      'dateOfBirth': dateOfBirth,
-      'bloodGroup': bloodGroup,
-      'address': address,
-      'status': status,
-      'lastVisit': lastVisit,
+      'age': age,
+      'gender': gender,
+      if (phone != null) 'phone': phone,
     };
   }
 

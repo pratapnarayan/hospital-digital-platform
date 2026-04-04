@@ -11,6 +11,7 @@ public class MedicalRecord {
     @Id
     private String id;
 
+    private String hospitalId;
     private String patientId;
     private String doctorId;
     private String title;
@@ -24,7 +25,8 @@ public class MedicalRecord {
         // Default constructor for Spring Data
     }
 
-    public MedicalRecord(String patientId, String doctorId, String title, String description, String diagnosis) {
+    public MedicalRecord(String hospitalId, String patientId, String doctorId, String title, String description, String diagnosis) {
+        this.hospitalId = hospitalId;
         this.patientId = patientId;
         this.doctorId = doctorId;
         this.title = title;
@@ -41,6 +43,14 @@ public class MedicalRecord {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getHospitalId() {
+        return hospitalId;
+    }
+
+    public void setHospitalId(String hospitalId) {
+        this.hospitalId = hospitalId;
     }
 
     public String getPatientId() {

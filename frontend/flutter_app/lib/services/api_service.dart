@@ -14,6 +14,8 @@ class ApiService implements ApiServiceInterface {
     receiveTimeout: const Duration(seconds: 15),
   ));
 
+  Dio get dio => _dio;
+
   void setAuthToken(String token) {
     _dio.options.headers['Authorization'] = 'Bearer $token';
   }

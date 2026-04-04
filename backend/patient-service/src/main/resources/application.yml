@@ -7,3 +7,8 @@ spring:
 
 server:
   port: 8082
+
+hospital:
+  auth-service:
+    url: "http://localhost:8081"
+  internal-secret: "default-secret-key-123"

@@ -6,7 +6,10 @@ import 'doctor_register_screen.dart';
 import 'doctor_dashboard_screen.dart';
 import 'patient_record_viewer_screen.dart';
 
-enum DoctorScreen { login, register, dashboard, patientRecord, addDiagnosis, notifications }
+import 'create_patient_screen.dart';
+import 'add_medical_record_screen.dart';
+
+enum DoctorScreen { login, register, dashboard, patientRecord, createPatient, addDiagnosis, notifications }
 
 class DoctorPortal extends StatefulWidget {
   const DoctorPortal({super.key});
@@ -140,9 +143,29 @@ class _DoctorPortalState extends State<DoctorPortal> {
     switch (_currentScreen) {
       case DoctorScreen.dashboard:
         return DoctorDashboardScreen(
+          key: UniqueKey(), // Forces complete rebuild when returned to dashboard to refresh data.
           onNavigate: _handleNavigate,
           onViewPatient: _handleViewPatient,
           onLogout: _handleLogout,
+        );
+      case DoctorScreen.createPatient:
+        return CreatePatientScreen(
+          onPatientCreated: () => _handleNavigate(DoctorScreen.dashboard), 
+          onCancel: () => _handleNavigate(DoctorScreen.dashboard),
+        );
+      case DoctorScreen.addDiagnosis:
+        if (_selectedPatientId == null) {
+          // Safety fallback
+          return DoctorDashboardScreen(
+            onNavigate: _handleNavigate,
+            onViewPatient: _handleViewPatient,
+            onLogout: _handleLogout,
+          );
+        }
+        return AddMedicalRecordScreen(
+          patientId: _selectedPatientId!,
+          onRecordAdded: () => _handleNavigate(DoctorScreen.patientRecord),
+          onCancel: () => _handleNavigate(DoctorScreen.patientRecord),
         );
       case DoctorScreen.patientRecord:
         return PatientRecordViewerScreen(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/patient_model.dart';
 import '../../services/patient_service.dart';
 import 'doctor_portal.dart';
 
@@ -20,6 +21,19 @@ class DoctorDashboardScreen extends StatefulWidget {
 
 class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
   final _searchController = TextEditingController();
+  late Future<List<Patient>> _patientsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshPatients();
+  }
+
+  void _refreshPatients() {
+    setState(() {
+      _patientsFuture = patientService.getPatients();
+    });
+  }
 
   @override
   void dispose() {
@@ -29,10 +43,14 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final patients = patientService.getMockPatients();
-
     return Scaffold(
       backgroundColor: Colors.grey[50],
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => widget.onNavigate(DoctorScreen.createPatient),
+        backgroundColor: const Color(0xFF1976D2),
+        icon: const Icon(Icons.person_add, color: Colors.white),
+        label: const Text('Add Patient', style: TextStyle(color: Colors.white)),
+      ),
       body: Column(
         children: [
           // Header
@@ -75,7 +93,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                             ),
                           ),
                           Text(
-                            'Dr. Michael Chen • Cardiology',
+                            'Secured Gateway',
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.black54,
@@ -84,43 +102,11 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                         ],
                       ),
                     ),
-                    Stack(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.notifications_outlined),
-                          onPressed: () {},
-                        ),
-                        Positioned(
-                          right: 8,
-                          top: 8,
-                          child: Container(
-                            width: 16,
-                            height: 16,
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Center(
-                              child: Text(
-                                '3',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                    IconButton(
+                      icon: const Icon(Icons.refresh),
+                      onPressed: _refreshPatients,
                     ),
-                    CircleAvatar(
-                      backgroundColor: const Color(0xFF1976D2),
-                      child: const Text(
-                        'MC',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
+                    const SizedBox(width: 16),
                     IconButton(
                       icon: const Icon(Icons.logout),
                       onPressed: widget.onLogout,
@@ -153,7 +139,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                             child: TextField(
                               controller: _searchController,
                               decoration: const InputDecoration(
-                                hintText: 'Enter Medical ID or Patient Name',
+                                hintText: 'Enter Patient Name or ID',
                                 border: InputBorder.none,
                                 prefixIcon: Icon(Icons.search),
                                 contentPadding: EdgeInsets.zero,
@@ -175,45 +161,11 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 24),
-
-                  // Stats
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          'Patients Today',
-                          '24',
-                          Icons.people,
-                          const Color(0xFF1976D2),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildStatCard(
-                          'Pending Prescriptions',
-                          '8',
-                          Icons.description,
-                          Colors.orange,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildStatCard(
-                          'New Uploads',
-                          '12',
-                          Icons.upload_file,
-                          Colors.green,
-                        ),
-                      ),
-                    ],
-                  ),
-
                   const SizedBox(height: 32),
 
-                  // Recent Patients
+                  // Recent Patients 
                   const Text(
-                    'Recent Patients',
+                    'Registered Patients',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -221,165 +173,121 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      side: BorderSide(color: Colors.grey[300]!),
-                    ),
-                    child: Column(
-                      children: patients.map((patient) {
-                        return InkWell(
-                          onTap: () => widget.onViewPatient(patient.id),
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              border: Border(
-                                bottom: BorderSide(color: Colors.grey[200]!),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  backgroundColor: Colors.grey[200],
-                                  child: Text(
-                                    patient.initials,
-                                    style: const TextStyle(
-                                      color: Colors.black87,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                  
+                  FutureBuilder<List<Patient>>(
+                    future: _patientsFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: Padding(
+                          padding: EdgeInsets.all(32.0),
+                          child: CircularProgressIndicator(),
+                        ));
+                      }
+                      if (snapshot.hasError) {
+                        return const Card(
+                           child: Padding(
+                             padding: EdgeInsets.all(16.0),
+                             child: Text('Error loading patients. Check the network connection or logs.'),
+                           ),
+                        );
+                      }
+                      
+                      final patients = snapshot.data ?? [];
+                      if (patients.isEmpty) {
+                         return const Card(
+                           child: Padding(
+                             padding: EdgeInsets.all(32.0),
+                             child: Center(child: Text('No patients found. Securely create one.')),
+                           ),
+                         );
+                      }
+
+                      return Card(
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        child: Column(
+                          children: patients.map((patient) {
+                            return InkWell(
+                              onTap: () => widget.onViewPatient(patient.id),
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  border: Border(
+                                    bottom: BorderSide(color: Colors.grey[200]!),
                                   ),
                                 ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        patient.name,
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.black87,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        patient.medicalId,
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.black54,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                child: Row(
                                   children: [
-                                    const Text(
-                                      'Last Visit',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.black54,
+                                    CircleAvatar(
+                                      backgroundColor: Colors.grey[200],
+                                      child: Text(
+                                        patient.initials,
+                                        style: const TextStyle(
+                                          color: Colors.black87,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      patient.lastVisit ?? 'N/A',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.black87,
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            patient.name,
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'Age: ${patient.age} • ${patient.gender}',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.black54,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Text(
+                                        'Active',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.white,
+                                        ),
                                       ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(width: 16),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: patient.status == 'Active'
-                                        ? Colors.green
-                                        : Colors.grey,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    patient.status,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      );
+                    }
                   ),
                 ],
               ),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: Colors.grey[300]!),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                icon,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.black54,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

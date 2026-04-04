@@ -10,6 +10,7 @@ class MockAuthService implements AuthServiceInterface {
 
   bool get isLoggedIn => _currentUserId != null;
   String? get currentUserId => _currentUserId;
+  String? get currentPatientId => _currentUserId;
   String? get currentUserRole => _currentUserRole;
   String? get currentUserName => _currentUserName;
 

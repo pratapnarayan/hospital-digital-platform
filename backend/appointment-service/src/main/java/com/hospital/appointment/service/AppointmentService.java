@@ -37,10 +37,16 @@ public class AppointmentService {
         String hospitalId = JwtClaimsAccessor.hospitalId().orElseThrow(() -> new SecurityException("Hospital ID missing from token"));
         
         String doctorId;
+        String assignedPatientId;
         if ("PATIENT".equalsIgnoreCase(role)) {
             doctorId = request.getDoctorId() != null && !request.getDoctorId().isEmpty() ? request.getDoctorId() : "DOC-DEFAULT";
+            assignedPatientId = JwtClaimsAccessor.patientId().orElseThrow(() -> new SecurityException("Patient ID missing from token"));
+            if (request.getPatientId() != null && !request.getPatientId().isEmpty() && !request.getPatientId().equals(assignedPatientId)) {
+                throw new SecurityException("Cannot create appointment for another patient");
+            }
         } else {
             doctorId = JwtClaimsAccessor.userId().orElseThrow(() -> new SecurityException("Doctor User ID missing from token"));
+            assignedPatientId = request.getPatientId();
         }
 
         Instant start = request.getAppointmentTime();
@@ -66,7 +72,7 @@ public class AppointmentService {
             Appointment appointment = Appointment.builder()
                     .hospitalId(hospitalId)
                     .doctorId(doctorId)
-                    .patientId(request.getPatientId())
+                    .patientId(assignedPatientId)
                     .appointmentTime(start)
                     .durationMinutes(request.getDurationMinutes())
                     .appointmentEndTime(end)
@@ -144,11 +150,8 @@ public class AppointmentService {
         }
 
         // 3. Status Transition strict validation
-        if (!"SCHEDULED".equals(currentStatus) && !"CANCELLED".equals(newStatus)) {
-            // Already finalized
-            if ("COMPLETED".equals(currentStatus) || "CANCELLED".equals(currentStatus) || "NO_SHOW".equals(currentStatus)) {
-                throw new IllegalArgumentException("Cannot transition from finalized status: " + currentStatus);
-            }
+        if ("COMPLETED".equals(currentStatus) || "CANCELLED".equals(currentStatus) || "NO_SHOW".equals(currentStatus)) {
+            throw new IllegalArgumentException("Cannot transition from finalized status: " + currentStatus);
         }
 
         // Strict role validation

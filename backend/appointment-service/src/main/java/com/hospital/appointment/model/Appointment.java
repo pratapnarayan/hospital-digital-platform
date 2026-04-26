@@ -18,7 +18,7 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 @Document(collection = "appointments")
-@CompoundIndex(name = "doctor_time_idx", def = "{'doctorId': 1, 'appointmentTime': 1}", unique = true)
+@CompoundIndex(name = "hospital_doctor_time_idx", def = "{'hospitalId': 1, 'doctorId': 1, 'appointmentTime': 1}", unique = true)
 public class Appointment {
 
     @Id

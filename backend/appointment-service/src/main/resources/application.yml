@@ -1,0 +1,19 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: appointment-service
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/hospitalDB
+  jackson:
+    serialization:
+      WRITE_DATES_AS_TIMESTAMPS: false
+
+jwt:
+  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+  expiration: 86400000
+
+hospital:
+  internal-secret: super-secret-internal-key-for-hospital-services

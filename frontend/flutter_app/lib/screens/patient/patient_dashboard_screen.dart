@@ -3,6 +3,7 @@ import '../../models/patient_model.dart';
 import '../../services/current_auth_service.dart';
 import '../../services/patient_service.dart';
 import 'patient_app.dart';
+import 'appointment_list_screen.dart';
 
 class PatientDashboardScreen extends StatefulWidget {
   final Function(PatientScreen) onNavigate;
@@ -187,7 +188,12 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
                           'Appointments',
                           Icons.calendar_today,
                           Colors.purple,
-                          () {},
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const AppointmentListScreen()),
+                            );
+                          },
                         ),
                         _buildQuickAction(
                           'Medications',

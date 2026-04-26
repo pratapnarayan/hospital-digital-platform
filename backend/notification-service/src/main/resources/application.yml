@@ -6,4 +6,4 @@ spring:
       uri: mongodb://localhost:27017/hospitalDB
 
 server:
-  port: 8084
+  port: 8085

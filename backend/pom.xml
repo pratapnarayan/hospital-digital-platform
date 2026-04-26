@@ -28,6 +28,7 @@
         <module>patient-service</module>
         <module>record-service</module>
         <module>notification-service</module>
+        <module>appointment-service</module>
         <module>common-libs</module>
     </modules>
 

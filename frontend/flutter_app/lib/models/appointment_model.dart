@@ -27,14 +27,19 @@ class Appointment {
 
   static DateTime? __parseDate(dynamic dateVal) {
     if (dateVal == null) return null;
-    if (dateVal is String) return DateTime.tryParse(dateVal);
+    if (dateVal is String) {
+      final parsed = DateTime.tryParse(dateVal);
+      return parsed?.toLocal();
+    }
     if (dateVal is int) {
-      return dateVal > 100000000000 
+      final parsed = dateVal > 100000000000 
           ? DateTime.fromMillisecondsSinceEpoch(dateVal)
           : DateTime.fromMillisecondsSinceEpoch(dateVal * 1000);
+      return parsed.toLocal();
     }
     if (dateVal is double) {
-      return DateTime.fromMillisecondsSinceEpoch((dateVal * 1000).toInt());
+      final parsed = DateTime.fromMillisecondsSinceEpoch((dateVal * 1000).toInt());
+      return parsed.toLocal();
     }
     return null;
   }

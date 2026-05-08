@@ -3,6 +3,7 @@ package com.hospital.auth;
 import com.hospital.auth.dto.InternalUserRequest;
 import com.hospital.auth.model.User;
 import com.hospital.auth.repository.UserRepository;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +40,7 @@ public class InternalUserController {
     @PostMapping("/users")
     public ResponseEntity<?> createInternalUser(
             @RequestHeader("X-Internal-Secret") String secretHeader,
-            @RequestBody InternalUserRequest request) {
+            @Valid @RequestBody InternalUserRequest request) {
 
         if (!internalSecret.equals(secretHeader)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid Internal Secret");

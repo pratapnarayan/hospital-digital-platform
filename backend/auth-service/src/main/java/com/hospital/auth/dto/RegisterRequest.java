@@ -16,6 +16,10 @@ public class RegisterRequest {
     private String password;
 
     @NotBlank(message = "Role is required")
+    @Pattern(
+        regexp = "(?i)PATIENT|DOCTOR|ADMIN|NURSE",
+        message = "Role must be one of: PATIENT, DOCTOR, ADMIN, NURSE"
+    )
     private String role;
 
     // Required when role = DOCTOR; validated in service logic.

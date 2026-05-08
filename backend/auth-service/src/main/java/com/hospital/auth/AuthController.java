@@ -1,6 +1,8 @@
 package com.hospital.auth;
 
+import com.hospital.auth.dto.ChangePasswordRequest;
 import com.hospital.auth.dto.ForgotPasswordRequest;
+import com.hospital.auth.dto.LoginRequest;
 import com.hospital.auth.dto.RegisterRequest;
 import com.hospital.auth.dto.ResetPasswordRequest;
 import com.hospital.auth.model.User;
@@ -14,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -88,14 +91,20 @@ public class AuthController {
     }
 
     // ------------------------------------------------------------------
-    // LOGIN — unchanged, backward-compatible for all existing users
-    // Works even when phoneNumber is absent (legacy accounts).
+    // LOGIN
+    //
+    // Uses a typed DTO so Spring validates the body before we touch it.
+    // Backward-compatible: works for all existing users regardless of
+    // whether they have a phoneNumber (legacy accounts are unaffected).
     // ------------------------------------------------------------------
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
-        Optional<User> userOpt = userRepository.findByUsername(credentials.get("username"));
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+        Optional<User> userOpt = userRepository.findByUsername(request.getUsername());
 
-        if (userOpt.isPresent() && PASSWORD_ENCODER.matches(credentials.get("password"), userOpt.get().getPassword())) {
+        // Both conditions are checked together so the response time doesn't
+        // reveal whether the username exists (timing side-channel mitigation).
+        if (userOpt.isPresent() &&
+                PASSWORD_ENCODER.matches(request.getPassword(), userOpt.get().getPassword())) {
             try {
                 String token = jwtUtil.generateToken(userOpt.get());
                 Map<String, Object> response = new HashMap<>();
@@ -112,29 +121,23 @@ public class AuthController {
     }
 
     // ------------------------------------------------------------------
-    // CHANGE PASSWORD (first-login reset flow)
-    // Patient provides current password as proof of identity — no JWT needed.
+    // CHANGE PASSWORD (first-login reset)
+    //
+    // Patient provides current password as proof of identity — no JWT required.
+    // Min-length matches registration (8 chars) for consistency.
     // ------------------------------------------------------------------
     @PutMapping("/change-password")
-    public ResponseEntity<?> changePassword(@RequestBody Map<String, String> body) {
-        String username = body.get("username");
-        String currentPassword = body.get("currentPassword");
-        String newPassword = body.get("newPassword");
+    public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
 
-        if (username == null || currentPassword == null || newPassword == null) {
-            return ResponseEntity.badRequest().body("username, currentPassword and newPassword are required");
-        }
-        if (newPassword.length() < 6) {
-            return ResponseEntity.badRequest().body("New password must be at least 6 characters");
-        }
+        Optional<User> userOpt = userRepository.findByUsername(request.getUsername());
 
-        Optional<User> userOpt = userRepository.findByUsername(username);
-        if (userOpt.isEmpty() || !PASSWORD_ENCODER.matches(currentPassword, userOpt.get().getPassword())) {
+        if (userOpt.isEmpty() ||
+                !PASSWORD_ENCODER.matches(request.getCurrentPassword(), userOpt.get().getPassword())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
         }
 
         User user = userOpt.get();
-        user.setPassword(PASSWORD_ENCODER.encode(newPassword));
+        user.setPassword(PASSWORD_ENCODER.encode(request.getNewPassword()));
         user.setPasswordResetRequired(false);
         userRepository.save(user);
 
@@ -142,7 +145,7 @@ public class AuthController {
     }
 
     // ------------------------------------------------------------------
-    // FORGOT PASSWORD — Task 5
+    // FORGOT PASSWORD
     //
     // Security design:
     //   - Response is identical whether the phone exists or not (no enumeration).
@@ -174,9 +177,7 @@ public class AuthController {
             user.setResetTokenExpiry(expiry);
             userRepository.save(user);
 
-            // Partial-mask phone in logs to avoid PII in log files.
-            String maskedPhone = maskPhone(phone);
-            log.info("Reset token generated for phone={} expires={}", maskedPhone, expiry);
+            log.info("Reset token generated for phone={} expires={}", maskPhone(phone), expiry);
 
             // PRODUCTION: remove 'resetToken' from response and send via SMS.
             // MVP: returned so the frontend can display it without SMS integration.
@@ -187,12 +188,14 @@ public class AuthController {
     }
 
     // ------------------------------------------------------------------
-    // RESET PASSWORD — Task 6
+    // RESET PASSWORD
     //
     // Security design:
     //   - Same generic error for wrong phone, wrong token, and expired token.
+    //   - Constant-time token comparison via MessageDigest.isEqual to prevent
+    //     timing-based oracle attacks on the token byte sequence.
     //   - Token is cleared immediately after first successful use (one-time).
-    //   - Sets passwordResetRequired=false in case this was also a first-login reset.
+    //   - Sets passwordResetRequired=false so first-login flag is also cleared.
     //   - RATE LIMIT TODO: limit reset attempts per phone (e.g. 5 per 15 minutes)
     //     to prevent brute-force of the 8-char token space.
     // ------------------------------------------------------------------
@@ -228,19 +231,24 @@ public class AuthController {
                     .body(Map.of("success", false, "message", INVALID_TOKEN_MSG));
         }
 
-        // Constant-time comparison is preferred; for alphanumeric tokens of fixed
-        // length, equals() timing variance is negligible, but MessageDigest.isEqual
-        // would be strictly safer in a high-security context.
-        if (!user.getResetToken().equals(submittedToken)) {
+        // Constant-time comparison — MessageDigest.isEqual runs in time proportional
+        // to the array length regardless of where bytes differ, preventing a
+        // timing oracle that could leak partial token bytes.
+        boolean tokenMatches = MessageDigest.isEqual(
+                user.getResetToken().getBytes(),
+                submittedToken.getBytes()
+        );
+
+        if (!tokenMatches) {
             return ResponseEntity.badRequest()
                     .body(Map.of("success", false, "message", INVALID_TOKEN_MSG));
         }
 
-        // All checks passed — update password and clear all reset state atomically.
+        // All checks passed — update password and clear all reset state.
         user.setPassword(PASSWORD_ENCODER.encode(request.getNewPassword()));
         user.setResetToken(null);
         user.setResetTokenExpiry(null);
-        user.setPasswordResetRequired(false); // clears first-login flag if also pending
+        user.setPasswordResetRequired(false);
         userRepository.save(user);
 
         log.info("Password successfully reset for phone={}", maskPhone(phone));
@@ -262,7 +270,7 @@ public class AuthController {
         return token.toString();
     }
 
-    /** Masks the middle digits of a phone for logging. 9876543210 → 987***210 */
+    /** Masks the middle digits of a phone for log PII reduction. 9876543210 → 987***210 */
     private String maskPhone(String phone) {
         if (phone == null || phone.length() < 7) return "***";
         int keep = 3;

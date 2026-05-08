@@ -4,10 +4,18 @@ spring:
   data:
     mongodb:
       uri: mongodb://localhost:27017/hospitalDB
-      # Auto-index creation is disabled by default in Spring Data MongoDB 4.x.
-      # Enabled here for development convenience. In production, create indexes
-      # via a dedicated migration script (e.g. Mongock) and set this to false.
-      auto-index-creation: true
+      # auto-index-creation is disabled. Index lifecycle is managed explicitly by
+      # PhoneNumberIndexMigration (ApplicationRunner) which calls ensureIndex() —
+      # an idempotent, production-safe operation. Enabling this flag causes Spring
+      # to scan all @Document classes and create/verify indexes on every startup,
+      # which blocks collections under load and is inappropriate for production.
+      auto-index-creation: false
 
 server:
   port: 8081
+
+# JWT signing secret — must be at least 32 characters for HS256.
+# Override in production via the JWT_SECRET environment variable or a secrets manager.
+# Never commit a real production secret to source control.
+jwt:
+  secret: ${JWT_SECRET:dev-secret-key-must-be-at-least-32-bytes!!}

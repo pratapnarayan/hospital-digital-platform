@@ -18,7 +18,7 @@ public interface AppointmentRepository extends MongoRepository<Appointment, Stri
     List<Appointment> findOverlappingAppointments(String hospitalId, String doctorId, Instant newStart, Instant newEnd);
 
     // Doctor pagination (optionally filtered by Day using strict temporal ranges)
-    @Query("{ 'hospitalId': ?0, 'doctorId': ?1, 'status': { $ne: 'CANCELLED' }, 'appointmentTime': { $gte: ?2, $lte: ?3 } }")
+    @Query("{ 'hospitalId': ?0, 'doctorId': { $in: [?1, 'DOC-DEFAULT'] }, 'status': { $ne: 'CANCELLED' }, 'appointmentTime': { $gte: ?2, $lte: ?3 } }")
     Page<Appointment> findByHospitalIdAndDoctorIdAndDateRange(String hospitalId, String doctorId, Instant startOfDay, Instant endOfDay, Pageable pageable);
 
     // Patient pagination

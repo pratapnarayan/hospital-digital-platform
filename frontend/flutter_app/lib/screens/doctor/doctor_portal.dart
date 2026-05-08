@@ -6,10 +6,12 @@ import 'doctor_register_screen.dart';
 import 'doctor_dashboard_screen.dart';
 import 'patient_record_viewer_screen.dart';
 
+import 'patient_list_screen.dart';
 import 'create_patient_screen.dart';
 import 'add_medical_record_screen.dart';
+import 'doctor_appointments_screen.dart';
 
-enum DoctorScreen { login, register, dashboard, patientRecord, createPatient, addDiagnosis, notifications }
+enum DoctorScreen { login, register, dashboard, patients, patientRecord, createPatient, addDiagnosis, notifications, appointments }
 
 class DoctorPortal extends StatefulWidget {
   const DoctorPortal({super.key});
@@ -148,6 +150,13 @@ class _DoctorPortalState extends State<DoctorPortal> {
           onViewPatient: _handleViewPatient,
           onLogout: _handleLogout,
         );
+      case DoctorScreen.patients:
+        return PatientListScreen(
+          key: UniqueKey(),
+          onNavigate: _handleNavigate,
+          onViewPatient: _handleViewPatient,
+          onLogout: _handleLogout,
+        );
       case DoctorScreen.createPatient:
         return CreatePatientScreen(
           onPatientCreated: () => _handleNavigate(DoctorScreen.dashboard), 
@@ -171,6 +180,12 @@ class _DoctorPortalState extends State<DoctorPortal> {
         return PatientRecordViewerScreen(
           patientId: _selectedPatientId,
           onNavigate: _handleNavigate,
+        );
+      case DoctorScreen.appointments:
+        return DoctorAppointmentsScreen(
+          key: UniqueKey(), // Forces rebuild to refresh api data
+          onNavigate: _handleNavigate,
+          onLogout: _handleLogout,
         );
       default:
         return DoctorDashboardScreen(

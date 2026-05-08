@@ -16,9 +16,13 @@ class AuthService implements AuthServiceInterface {
   String? _currentUserRole;
   String? _currentHospitalId;
   String? _currentPatientId;
+  bool _requiresPasswordReset = false;
 
   @override
   bool get isLoggedIn => _currentUserId != null;
+
+  @override
+  bool get requiresPasswordReset => _requiresPasswordReset;
 
   @override
   String? get currentUserId => _currentUserId;
@@ -54,6 +58,8 @@ class AuthService implements AuthServiceInterface {
         // Decode claims and cache them in memory
         _applyTokenClaims(token);
 
+        _requiresPasswordReset = response.data['passwordResetRequired'] == true;
+
         return true;
       }
     } catch (e) {
@@ -86,6 +92,25 @@ class AuthService implements AuthServiceInterface {
     _currentUserRole = null;
     _currentHospitalId = null;
     _currentPatientId = null;
+    _requiresPasswordReset = false;
+  }
+
+  @override
+  Future<bool> resetPassword(String username, String currentPassword, String newPassword) async {
+    try {
+      final response = await _dio.put('/auth/change-password', data: {
+        'username': username,
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+      });
+      if (response.statusCode == 200) {
+        _requiresPasswordReset = false;
+        return true;
+      }
+    } catch (e) {
+      print('Password reset failed: $e');
+    }
+    return false;
   }
 
   /// Utility to restore JWT token after app restart and re-populate in-memory claims.

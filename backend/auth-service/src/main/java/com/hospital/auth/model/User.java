@@ -26,4 +26,9 @@ public class User {
      * Nullable for now, required later. Emitted into the JWT even if null.
      */
     private String hospitalId;
+
+    /**
+     * True for auto-provisioned patient accounts until they complete first-time password reset.
+     */
+    private boolean passwordResetRequired;
 }

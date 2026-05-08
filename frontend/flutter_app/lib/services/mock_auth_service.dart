@@ -9,6 +9,7 @@ class MockAuthService implements AuthServiceInterface {
   String? _currentUserName;
 
   bool get isLoggedIn => _currentUserId != null;
+  bool get requiresPasswordReset => false;
   String? get currentUserId => _currentUserId;
   String? get currentPatientId => _currentUserId;
   String? get currentUserRole => _currentUserRole;
@@ -37,6 +38,12 @@ class MockAuthService implements AuthServiceInterface {
     _currentUserId = null;
     _currentUserRole = null;
     _currentUserName = null;
+  }
+
+  @override
+  Future<bool> resetPassword(String username, String currentPassword, String newPassword) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return true;
   }
 
   String _getUserNameByRole(String role) {

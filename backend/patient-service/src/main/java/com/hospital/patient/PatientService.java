@@ -83,7 +83,8 @@ public class PatientService {
         String generatedPassword = generateNumericPassword(6);
 
         Map<String, String> payload = new HashMap<>();
-        payload.put("email", mappedPhone); // Handled dynamically backward compatibly within Gateway
+        payload.put("email", mappedPhone);           // phone is the patient's login username
+        payload.put("phoneNumber", mappedPhone);     // also stored as phoneNumber for forgot-password flow
         payload.put("password", generatedPassword);
         payload.put("role", "PATIENT");
         payload.put("patientId", savedPatient.getId());

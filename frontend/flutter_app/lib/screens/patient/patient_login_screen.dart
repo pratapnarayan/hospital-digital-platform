@@ -6,11 +6,13 @@ import '../../services/environment.dart';
 class PatientLoginScreen extends StatefulWidget {
   final VoidCallback onLogin;
   final void Function(String username, String currentPassword) onResetPassword;
+  final VoidCallback onForgotPassword;
 
   const PatientLoginScreen({
     super.key,
     required this.onLogin,
     required this.onResetPassword,
+    required this.onForgotPassword,
   });
 
   @override
@@ -239,7 +241,20 @@ class _PatientLoginScreenState extends State<PatientLoginScreen>
             ),
             child: const Text('Sign In'),
           ),
-          const SizedBox(height: 24),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: widget.onForgotPassword,
+              child: const Text(
+                'Forgot Password?',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF1976D2),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(child: Divider(color: Colors.grey[300])),

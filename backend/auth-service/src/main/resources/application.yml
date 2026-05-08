@@ -4,6 +4,10 @@ spring:
   data:
     mongodb:
       uri: mongodb://localhost:27017/hospitalDB
+      # Auto-index creation is disabled by default in Spring Data MongoDB 4.x.
+      # Enabled here for development convenience. In production, create indexes
+      # via a dedicated migration script (e.g. Mongock) and set this to false.
+      auto-index-creation: true
 
 server:
   port: 8081

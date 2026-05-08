@@ -7,6 +7,8 @@ import 'api_service.dart';
 import 'auth_service_interface.dart';
 import 'jwt_decoder.dart';
 
+export 'auth_service_interface.dart' show ForgotPasswordResult;
+
 class AuthService implements AuthServiceInterface {
   final Dio _dio = Dio(BaseOptions(baseUrl: 'http://localhost:8080'));
   final _storage = const FlutterSecureStorage();
@@ -120,6 +122,47 @@ class AuthService implements AuthServiceInterface {
       apiService.setAuthToken(token);
       _applyTokenClaims(token);
     }
+  }
+
+  @override
+  Future<ForgotPasswordResult> forgotPassword(String phoneNumber) async {
+    try {
+      final response = await _dio.post('/auth/forgot-password', data: {
+        'phoneNumber': phoneNumber.trim(),
+      });
+      if (response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>;
+        return ForgotPasswordResult(
+          success: data['success'] == true,
+          message: data['message']?.toString() ?? 'Code sent',
+          devResetToken: data['resetToken'] as String?,
+        );
+      }
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      final msg = (data is Map ? data['message'] : null) ?? 'Unable to connect. Please try again.';
+      return ForgotPasswordResult(success: false, message: msg.toString());
+    } catch (_) {}
+    return const ForgotPasswordResult(success: false, message: 'An unexpected error occurred.');
+  }
+
+  @override
+  Future<bool> resetPasswordWithToken(
+      String phoneNumber, String token, String newPassword) async {
+    try {
+      final response = await _dio.post('/auth/reset-password', data: {
+        'phoneNumber': phoneNumber.trim(),
+        'resetToken': token.trim().toUpperCase(),
+        'newPassword': newPassword,
+      });
+      return response.statusCode == 200 &&
+          (response.data as Map<String, dynamic>?)?['success'] == true;
+    } on DioException catch (e) {
+      print('Reset-password error: ${e.response?.data}');
+    } catch (e) {
+      print('Reset-password unexpected: $e');
+    }
+    return false;
   }
 
   /// Decodes the JWT and stores claims in memory.

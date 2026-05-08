@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/current_auth_service.dart';
 import '../../services/environment.dart';
+import '../patient/forgot_password_screen.dart';
 
 class DoctorLoginScreen extends StatefulWidget {
   final VoidCallback onLogin;
@@ -207,7 +208,7 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                         contentPadding: const EdgeInsets.all(12),
                       ),
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 24),
 
                     // Login button
                     ElevatedButton(
@@ -237,7 +238,32 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                                   fontSize: 15, fontWeight: FontWeight.w600),
                             ),
                     ),
-                    const SizedBox(height: 20),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => Scaffold(
+                              backgroundColor: Colors.grey[50],
+                              body: SafeArea(
+                                child: ForgotPasswordScreen(
+                                  onSuccess: () => Navigator.of(context).pop(),
+                                  onBack: () => Navigator.of(context).pop(),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        child: const Text(
+                          'Forgot Password?',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF1976D2),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
 
                     // Divider
                     Row(

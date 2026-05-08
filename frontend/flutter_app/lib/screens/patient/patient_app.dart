@@ -5,8 +5,9 @@ import 'medical_history_screen.dart';
 import 'upload_prescription_screen.dart';
 import 'patient_profile_screen.dart';
 import 'reset_password_screen.dart';
+import 'forgot_password_screen.dart';
 
-enum PatientScreen { login, resetPassword, dashboard, history, upload, profile }
+enum PatientScreen { login, resetPassword, forgotPassword, dashboard, history, upload, profile }
 
 class PatientApp extends StatefulWidget {
   const PatientApp({super.key});
@@ -35,6 +36,12 @@ class _PatientAppState extends State<PatientApp> {
       _pendingUsername = username;
       _pendingPassword = currentPassword;
       _currentScreen = PatientScreen.resetPassword;
+    });
+  }
+
+  void _handleForgotPassword() {
+    setState(() {
+      _currentScreen = PatientScreen.forgotPassword;
     });
   }
 
@@ -78,21 +85,34 @@ class _PatientAppState extends State<PatientApp> {
               ],
             ),
             child: !_isLoggedIn
-                ? (_currentScreen == PatientScreen.resetPassword
-                    ? ResetPasswordScreen(
-                        username: _pendingUsername,
-                        currentPassword: _pendingPassword,
-                        onSuccess: _handleLogin,
-                      )
-                    : PatientLoginScreen(
-                        onLogin: _handleLogin,
-                        onResetPassword: _handleResetPassword,
-                      ))
+                ? _buildPreAuthScreen()
                 : _buildCurrentScreen(),
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildPreAuthScreen() {
+    switch (_currentScreen) {
+      case PatientScreen.resetPassword:
+        return ResetPasswordScreen(
+          username: _pendingUsername,
+          currentPassword: _pendingPassword,
+          onSuccess: _handleLogin,
+        );
+      case PatientScreen.forgotPassword:
+        return ForgotPasswordScreen(
+          onSuccess: _handleLogin,
+          onBack: () => setState(() => _currentScreen = PatientScreen.login),
+        );
+      default:
+        return PatientLoginScreen(
+          onLogin: _handleLogin,
+          onResetPassword: _handleResetPassword,
+          onForgotPassword: _handleForgotPassword,
+        );
+    }
   }
 
   Widget _buildCurrentScreen() {

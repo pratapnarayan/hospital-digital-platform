@@ -1,5 +1,5 @@
 /// mock_auth_service.dart
-/// Mock authentication service generated from Figma for offline UI testing.
+/// Mock authentication service for offline UI testing.
 
 import 'auth_service_interface.dart';
 
@@ -44,6 +44,23 @@ class MockAuthService implements AuthServiceInterface {
   Future<bool> resetPassword(String username, String currentPassword, String newPassword) async {
     await Future.delayed(const Duration(milliseconds: 500));
     return true;
+  }
+
+  @override
+  Future<ForgotPasswordResult> forgotPassword(String phoneNumber) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return const ForgotPasswordResult(
+      success: true,
+      message: 'If an account with this phone number exists, a reset code has been sent.',
+      devResetToken: 'MOCK1234',
+    );
+  }
+
+  @override
+  Future<bool> resetPasswordWithToken(
+      String phoneNumber, String token, String newPassword) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return token == 'MOCK1234';
   }
 
   String _getUserNameByRole(String role) {

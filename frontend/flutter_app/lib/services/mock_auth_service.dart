@@ -60,7 +60,8 @@ class MockAuthService implements AuthServiceInterface {
   Future<bool> resetPasswordWithToken(
       String phoneNumber, String token, String newPassword) async {
     await Future.delayed(const Duration(milliseconds: 500));
-    return token == 'MOCK1234';
+    final normalized = token.trim().toUpperCase();
+    return normalized == 'MOCK1234' || normalized == 'DEVMASTER';
   }
 
   String _getUserNameByRole(String role) {

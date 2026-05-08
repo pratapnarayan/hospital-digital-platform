@@ -79,6 +79,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (!mounted) return;
 
     if (result.success) {
+      // Auto-fill the code field in dev mode so testers don't have to copy it manually.
+      if (result.devResetToken != null) {
+        _tokenController.text = result.devResetToken!;
+      }
       setState(() {
         _isLoading = false;
         _submittedPhone = phone;

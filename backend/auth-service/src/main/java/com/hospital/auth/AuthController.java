@@ -11,6 +11,7 @@ import com.hospital.auth.utils.JwtUtil;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -48,6 +49,15 @@ public class AuthController {
             "Invalid or expired reset code. Please request a new one.";
 
     private final SecureRandom secureRandom = new SecureRandom();
+
+    /**
+     * Development-only master reset code (hospital.dev-master-reset-code in application.yml).
+     * When non-blank, any reset-password request that submits this code bypasses the
+     * per-user token check — useful for testing with random phone numbers that cannot
+     * receive SMS. Disable in production by setting DEV_MASTER_RESET_CODE to blank.
+     */
+    @Value("${hospital.dev-master-reset-code:}")
+    private String devMasterResetCode;
 
     @Autowired
     private UserRepository userRepository;
@@ -216,6 +226,26 @@ public class AuthController {
         }
 
         User user = userOpt.get();
+
+        // Dev master-code bypass — skip all per-user token checks when the submitted
+        // code matches the configured master (hospital.dev-master-reset-code).
+        // Disabled automatically when devMasterResetCode is blank (production default).
+        boolean masterCodeUsed = !devMasterResetCode.isBlank() &&
+                MessageDigest.isEqual(devMasterResetCode.toUpperCase().getBytes(),
+                        submittedToken.getBytes());
+
+        if (masterCodeUsed) {
+            log.warn("Dev master reset code used for phone={}", maskPhone(phone));
+            user.setPassword(PASSWORD_ENCODER.encode(request.getNewPassword()));
+            user.setResetToken(null);
+            user.setResetTokenExpiry(null);
+            user.setPasswordResetRequired(false);
+            userRepository.save(user);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Password reset successfully. Please log in with your new password."
+            ));
+        }
 
         if (user.getResetToken() == null || user.getResetToken().isBlank()) {
             return ResponseEntity.badRequest()

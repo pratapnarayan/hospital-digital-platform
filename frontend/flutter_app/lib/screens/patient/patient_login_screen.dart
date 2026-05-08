@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import '../../services/auth_service.dart';
 import '../../services/current_auth_service.dart';
 import '../../services/environment.dart';
 
 class PatientLoginScreen extends StatefulWidget {
   final VoidCallback onLogin;
+  final void Function(String username, String currentPassword) onResetPassword;
 
   const PatientLoginScreen({
     super.key,
     required this.onLogin,
+    required this.onResetPassword,
   });
 
   @override
@@ -39,18 +42,22 @@ class _PatientLoginScreenState extends State<PatientLoginScreen>
   }
 
   Future<void> _handleLogin() async {
-    final email = _emailController.text;
+    final username = _emailController.text.trim();
     final password = _passwordController.text;
 
     bool success;
     if (useMockData) {
-      success = await currentAuthService.login(email, password, 'patient');
+      success = await currentAuthService.login(username, password, 'patient');
     } else {
-      success = await currentAuthService.login(email, password);
+      success = await currentAuthService.login(username, password);
     }
 
     if (success) {
-      widget.onLogin();
+      if (currentAuthService.requiresPasswordReset) {
+        widget.onResetPassword(username, password);
+      } else {
+        widget.onLogin();
+      }
     }
   }
 

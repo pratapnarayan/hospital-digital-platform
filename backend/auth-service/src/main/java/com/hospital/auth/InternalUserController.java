@@ -42,6 +42,7 @@ public class InternalUserController {
         user.setRole(request.getRole() != null ? request.getRole() : "PATIENT");
         user.setPatientId(request.getPatientId());
         user.setHospitalId(request.getHospitalId());
+        user.setPasswordResetRequired(true);
 
         userRepository.save(user);
 

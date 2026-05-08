@@ -4,8 +4,9 @@ import 'patient_dashboard_screen.dart';
 import 'medical_history_screen.dart';
 import 'upload_prescription_screen.dart';
 import 'patient_profile_screen.dart';
+import 'reset_password_screen.dart';
 
-enum PatientScreen { login, dashboard, history, upload, profile }
+enum PatientScreen { login, resetPassword, dashboard, history, upload, profile }
 
 class PatientApp extends StatefulWidget {
   const PatientApp({super.key});
@@ -17,11 +18,23 @@ class PatientApp extends StatefulWidget {
 class _PatientAppState extends State<PatientApp> {
   PatientScreen _currentScreen = PatientScreen.login;
   bool _isLoggedIn = false;
+  String _pendingUsername = '';
+  String _pendingPassword = '';
 
   void _handleLogin() {
     setState(() {
       _isLoggedIn = true;
       _currentScreen = PatientScreen.dashboard;
+      _pendingUsername = '';
+      _pendingPassword = '';
+    });
+  }
+
+  void _handleResetPassword(String username, String currentPassword) {
+    setState(() {
+      _pendingUsername = username;
+      _pendingPassword = currentPassword;
+      _currentScreen = PatientScreen.resetPassword;
     });
   }
 
@@ -29,6 +42,8 @@ class _PatientAppState extends State<PatientApp> {
     setState(() {
       _isLoggedIn = false;
       _currentScreen = PatientScreen.login;
+      _pendingUsername = '';
+      _pendingPassword = '';
     });
   }
 
@@ -63,7 +78,16 @@ class _PatientAppState extends State<PatientApp> {
               ],
             ),
             child: !_isLoggedIn
-                ? PatientLoginScreen(onLogin: _handleLogin)
+                ? (_currentScreen == PatientScreen.resetPassword
+                    ? ResetPasswordScreen(
+                        username: _pendingUsername,
+                        currentPassword: _pendingPassword,
+                        onSuccess: _handleLogin,
+                      )
+                    : PatientLoginScreen(
+                        onLogin: _handleLogin,
+                        onResetPassword: _handleResetPassword,
+                      ))
                 : _buildCurrentScreen(),
           ),
         ),

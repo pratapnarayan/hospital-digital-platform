@@ -218,6 +218,30 @@ public class AuthController {
         // Normalise to uppercase so users can type lower/mixed case without rejection.
         String submittedToken = request.getResetToken().trim().toUpperCase();
 
+        // Dev master-code bypass — evaluated FIRST, before the user-not-found guard.
+        // This is intentional: forgotPassword always returns HTTP 200 (anti-enumeration),
+        // so a tester with a random phone number reaches phase 2 but has no real token.
+        // DEVMASTER must work even when the phone isn't in the DB (purely UI flow testing).
+        // If the user IS found, we actually update their password; if not, we still
+        // return success so the tester can verify the success screen renders.
+        // Disabled when devMasterResetCode is blank (set DEV_MASTER_RESET_CODE= in prod).
+        if (!devMasterResetCode.isBlank() &&
+                MessageDigest.isEqual(devMasterResetCode.toUpperCase().getBytes(),
+                        submittedToken.getBytes())) {
+            log.warn("Dev master reset code used for phone={}", maskPhone(phone));
+            userRepository.findByPhoneNumber(phone).ifPresent(u -> {
+                u.setPassword(PASSWORD_ENCODER.encode(request.getNewPassword()));
+                u.setResetToken(null);
+                u.setResetTokenExpiry(null);
+                u.setPasswordResetRequired(false);
+                userRepository.save(u);
+            });
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Password reset successfully. Please log in with your new password."
+            ));
+        }
+
         Optional<User> userOpt = userRepository.findByPhoneNumber(phone);
 
         if (userOpt.isEmpty()) {
@@ -226,26 +250,6 @@ public class AuthController {
         }
 
         User user = userOpt.get();
-
-        // Dev master-code bypass — skip all per-user token checks when the submitted
-        // code matches the configured master (hospital.dev-master-reset-code).
-        // Disabled automatically when devMasterResetCode is blank (production default).
-        boolean masterCodeUsed = !devMasterResetCode.isBlank() &&
-                MessageDigest.isEqual(devMasterResetCode.toUpperCase().getBytes(),
-                        submittedToken.getBytes());
-
-        if (masterCodeUsed) {
-            log.warn("Dev master reset code used for phone={}", maskPhone(phone));
-            user.setPassword(PASSWORD_ENCODER.encode(request.getNewPassword()));
-            user.setResetToken(null);
-            user.setResetTokenExpiry(null);
-            user.setPasswordResetRequired(false);
-            userRepository.save(user);
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "Password reset successfully. Please log in with your new password."
-            ));
-        }
 
         if (user.getResetToken() == null || user.getResetToken().isBlank()) {
             return ResponseEntity.badRequest()

@@ -21,6 +21,7 @@ class _PatientAppState extends State<PatientApp> {
   bool _isLoggedIn = false;
   String _pendingUsername = '';
   String _pendingPassword = '';
+  bool _passwordResetSuccess = false;
 
   void _handleLogin() {
     setState(() {
@@ -103,7 +104,10 @@ class _PatientAppState extends State<PatientApp> {
         );
       case PatientScreen.forgotPassword:
         return ForgotPasswordScreen(
-          onSuccess: _handleLogin,
+          onSuccess: () => setState(() {
+            _currentScreen = PatientScreen.login;
+            _passwordResetSuccess = true;
+          }),
           onBack: () => setState(() => _currentScreen = PatientScreen.login),
         );
       default:
@@ -111,6 +115,9 @@ class _PatientAppState extends State<PatientApp> {
           onLogin: _handleLogin,
           onResetPassword: _handleResetPassword,
           onForgotPassword: _handleForgotPassword,
+          showPasswordResetBanner: _passwordResetSuccess,
+          onPasswordResetBannerDismissed: () =>
+              setState(() => _passwordResetSuccess = false),
         );
     }
   }

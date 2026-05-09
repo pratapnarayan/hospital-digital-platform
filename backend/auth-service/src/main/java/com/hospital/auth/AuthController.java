@@ -229,13 +229,26 @@ public class AuthController {
                 MessageDigest.isEqual(devMasterResetCode.toUpperCase().getBytes(),
                         submittedToken.getBytes())) {
             log.warn("Dev master reset code used for phone={}", maskPhone(phone));
-            userRepository.findByPhoneNumber(phone).ifPresent(u -> {
+
+            // Try phoneNumber first; fall back to username (patients use phone as username).
+            // The fallback handles accounts created before phoneNumber was introduced —
+            // those records have phoneNumber=null so findByPhoneNumber returns empty.
+            Optional<User> devUser = userRepository.findByPhoneNumber(phone);
+            if (devUser.isEmpty()) {
+                devUser = userRepository.findByUsername(phone);
+            }
+            devUser.ifPresent(u -> {
                 u.setPassword(PASSWORD_ENCODER.encode(request.getNewPassword()));
                 u.setResetToken(null);
                 u.setResetTokenExpiry(null);
                 u.setPasswordResetRequired(false);
                 userRepository.save(u);
+                log.info("Dev master reset: password updated for userId={}", u.getId());
             });
+            if (devUser.isEmpty()) {
+                log.warn("Dev master reset: no user found for phone={}, password not changed", maskPhone(phone));
+            }
+
             return ResponseEntity.ok(Map.of(
                     "success", true,
                     "message", "Password reset successfully. Please log in with your new password."

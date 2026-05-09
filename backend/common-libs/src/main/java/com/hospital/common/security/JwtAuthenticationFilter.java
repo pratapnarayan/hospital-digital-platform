@@ -9,6 +9,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -21,13 +22,19 @@ import java.util.Collections;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    // NOTE: For this MVP, we mirror auth-service's HS256 secret.
-    // In production, externalize this and/or share via configuration management.
-    private static final String SECRET = "secret-key-must-be-at-least-32-bytes-long-for-hs256";
+    /**
+     * Loaded from jwt.secret in each consuming service's application.yml, or from the
+     * JWT_SECRET environment variable. Must match the secret used by auth-service to
+     * sign tokens — all services share the same HS256 key.
+     *
+     * Default value is for local development only and must be overridden in production.
+     */
+    @Value("${jwt.secret:dev-secret-key-must-be-at-least-32-bytes!!}")
+    private String secret;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+                                    FilterChain filterChain) throws ServletException, IOException {
 
         final String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
@@ -35,19 +42,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (!token.isEmpty()) {
                 try {
                     Jws<Claims> parsed = Jwts.parserBuilder()
-                            .setSigningKey(Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8)))
+                            .setSigningKey(Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8)))
                             .build()
                             .parseClaimsJws(token);
 
                     Claims claims = parsed.getBody();
 
-                    // Keep authorities empty for now (non-goal: RBAC enforcement).
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(claims, null, Collections.emptyList());
-
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+
                 } catch (JwtException ex) {
-                    // Invalid/expired token: ignore and continue unauthenticated (do not break endpoints).
+                    // Invalid or expired token — clear context and continue unauthenticated.
                     SecurityContextHolder.clearContext();
                 }
             }

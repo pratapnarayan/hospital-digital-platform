@@ -4,6 +4,27 @@ spring:
   data:
     mongodb:
       uri: mongodb://localhost:27017/hospitalDB
+      # auto-index-creation is disabled. Index lifecycle is managed explicitly by
+      # PhoneNumberIndexMigration (ApplicationRunner) which calls ensureIndex() —
+      # an idempotent, production-safe operation. Enabling this flag causes Spring
+      # to scan all @Document classes and create/verify indexes on every startup,
+      # which blocks collections under load and is inappropriate for production.
+      auto-index-creation: false
 
 server:
   port: 8081
+
+# JWT signing secret — must be at least 32 characters for HS256.
+# Override in production via the JWT_SECRET environment variable or a secrets manager.
+# Never commit a real production secret to source control.
+jwt:
+  secret: ${JWT_SECRET:dev-secret-key-must-be-at-least-32-bytes!!}
+
+hospital:
+  # Development-only master reset code.
+  # When non-empty, this code is accepted for ANY phone number in the reset-password
+  # endpoint, bypassing the per-user token check. Useful when testing with random
+  # phone numbers that cannot receive a real SMS.
+  # Set to empty (or unset DEV_MASTER_RESET_CODE) in production — the check is
+  # skipped entirely when the value is blank.
+  dev-master-reset-code: ${DEV_MASTER_RESET_CODE:DEVMASTER}

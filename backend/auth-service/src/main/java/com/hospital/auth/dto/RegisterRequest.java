@@ -6,10 +6,10 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
-public class InternalUserRequest {
+public class RegisterRequest {
 
-    @NotBlank(message = "Email is required")
-    private String email;       // used as username
+    @NotBlank(message = "Username is required")
+    private String username;
 
     @NotBlank(message = "Password is required")
     @Size(min = 8, message = "Password must be at least 8 characters")
@@ -22,14 +22,20 @@ public class InternalUserRequest {
     )
     private String role;
 
-    private String patientId;
+    // Required when role = DOCTOR; validated in service logic.
     private String hospitalId;
 
     /**
-     * Patient's phone number, forwarded from patient-service.
-     * For patients, this equals the email/username field since phone is the login identifier.
-     * Optional in the wire format to remain backward-compatible with older callers,
-     * but patient-service always provides it as of this release.
+     * Mandatory for all new registrations. Stored with a sparse unique index —
+     * existing legacy users without a phone number are unaffected.
+     *
+     * Accepted formats: 7–15 digits, optional leading +
+     * Examples: 9876543210  |  +919876543210  |  +12125551234
      */
+    @NotBlank(message = "Phone number is required")
+    @Pattern(
+        regexp = "^[+]?[0-9]{7,15}$",
+        message = "Phone number must be 7–15 digits with an optional leading +"
+    )
     private String phoneNumber;
 }

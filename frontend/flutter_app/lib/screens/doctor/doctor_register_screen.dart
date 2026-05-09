@@ -19,6 +19,7 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _hospitalIdController = TextEditingController();
+  final _phoneController = TextEditingController();
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -29,6 +30,7 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _hospitalIdController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
@@ -36,10 +38,20 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
     final hospitalId = _hospitalIdController.text.trim();
+    final phone = _phoneController.text.trim();
 
-    // Basic front-end validation
-    if (email.isEmpty || password.isEmpty || hospitalId.isEmpty) {
+    if (email.isEmpty || password.isEmpty || hospitalId.isEmpty || phone.isEmpty) {
       setState(() => _errorMessage = 'All fields are required.');
+      return;
+    }
+    if (password.length < 8) {
+      setState(() => _errorMessage = 'Password must be at least 8 characters.');
+      return;
+    }
+    // Basic client-side phone format check (7–15 digits, optional leading +).
+    final phoneRegex = RegExp(r'^[+]?[0-9]{7,15}$');
+    if (!phoneRegex.hasMatch(phone)) {
+      setState(() => _errorMessage = 'Enter a valid phone number (digits only, 7–15 chars).');
       return;
     }
 
@@ -52,6 +64,7 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
       email: email,
       password: password,
       hospitalId: hospitalId,
+      phoneNumber: phone,
     );
 
     if (!mounted) return;
@@ -235,6 +248,30 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
                         hintText: 'e.g. HOSP-001',
                         prefixIcon:
                             const Icon(Icons.local_hospital_outlined, size: 20),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        contentPadding: const EdgeInsets.all(12),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Phone Number
+                    const Text(
+                      'Phone Number',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
+                      decoration: InputDecoration(
+                        hintText: 'e.g. 9876543210',
+                        prefixIcon: const Icon(Icons.phone_outlined, size: 20),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),

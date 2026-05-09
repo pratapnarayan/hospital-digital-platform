@@ -6,11 +6,17 @@ import '../../services/environment.dart';
 class PatientLoginScreen extends StatefulWidget {
   final VoidCallback onLogin;
   final void Function(String username, String currentPassword) onResetPassword;
+  final VoidCallback onForgotPassword;
+  final bool showPasswordResetBanner;
+  final VoidCallback? onPasswordResetBannerDismissed;
 
   const PatientLoginScreen({
     super.key,
     required this.onLogin,
     required this.onResetPassword,
+    required this.onForgotPassword,
+    this.showPasswordResetBanner = false,
+    this.onPasswordResetBannerDismissed,
   });
 
   @override
@@ -129,6 +135,34 @@ class _PatientLoginScreenState extends State<PatientLoginScreen>
           ),
         ),
 
+        // Password reset success banner
+        if (widget.showPasswordResetBanner)
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.green[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.green[300]!),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.check_circle_outline, color: Colors.green[700], size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Password reset successfully. Please sign in with your new password.',
+                    style: TextStyle(color: Colors.green[800], fontSize: 13),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: widget.onPasswordResetBannerDismissed,
+                  child: Icon(Icons.close, size: 16, color: Colors.green[700]),
+                ),
+              ],
+            ),
+          ),
+
         // Form
         Expanded(
           child: Padding(
@@ -239,7 +273,20 @@ class _PatientLoginScreenState extends State<PatientLoginScreen>
             ),
             child: const Text('Sign In'),
           ),
-          const SizedBox(height: 24),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: widget.onForgotPassword,
+              child: const Text(
+                'Forgot Password?',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF1976D2),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(child: Divider(color: Colors.grey[300])),
